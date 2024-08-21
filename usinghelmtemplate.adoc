@@ -1,0 +1,162 @@
+= Lab: Using Artifact Hub to Customize and Deploy a Helm Chart
+
+== Objective
+
+In this lab, you will:
+* Learn how to find a Helm chart on Artifact Hub.
+* Download and customize an existing Helm chart.
+* Deploy the customized Helm chart to a Kubernetes cluster.
+* Verify the deployment and ensure the customizations are applied.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+* Minikube installed and running.
+* `kubectl` and `Helm` installed and configured.
+* Basic understanding of Kubernetes and Helm.
+* Access to the internet to browse Artifact Hub.
+
+== Lab Steps
+
+=== Step 1: Browse Artifact Hub
+
+1. Open your web browser and go to https://artifacthub.io/.
+2. In the search bar, type `nginx` and press Enter.
+3. Browse the results and select a Helm chart for NGINX that you would like to customize, such as the `bitnami/nginx` chart.
+4. Take note of the chart’s repository URL.
+
+=== Step 2: Add the Helm Repository
+
+Add the Helm repository to your local environment:
+
+[source,bash]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+----
+
+Verify that the repository has been added:
+
+[source,bash]
+----
+helm search repo nginx
+----
+
+You should see the `bitnami/nginx` chart listed.
+
+=== Step 3: Download the Helm Chart
+
+Download the Helm chart to your local environment for customization:
+
+[source,bash]
+----
+helm pull bitnami/nginx --untar
+----
+
+This command downloads and extracts the `nginx` chart into a directory called `nginx`.
+
+Change to the chart directory:
+
+[source,bash]
+----
+cd nginx
+----
+
+=== Step 4: Customize the Helm Chart
+
+Open the `values.yaml` file in a text editor to customize the chart.
+
+[source,yaml]
+----
+## NGINX specific configuration parameters
+image:
+  registry: docker.io
+  repository: bitnami/nginx
+  tag: 1.21.3
+
+service:
+  type: NodePort
+  port: 80
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+replicaCount: 2
+----
+
+For this lab, make the following customizations:
+1. Set `replicaCount` to `3`.
+2. Change the service `type` from `NodePort` to `LoadBalancer`.
+3. Adjust resource limits and requests as needed for your environment.
+
+.Save and close the file.
+
+=== Step 5: Deploy the Customized Helm Chart
+
+Deploy the customized chart to your Minikube cluster:
+
+[source,bash]
+----
+helm install my-custom-nginx .
+----
+
+Helm will deploy the chart using your custom `values.yaml` settings.
+
+=== Step 6: Verify the Deployment
+
+Check the status of the deployed resources:
+
+[source,bash]
+----
+kubectl get pods
+kubectl get svc
+----
+
+You should see three NGINX pods running, and the service should be of type `LoadBalancer`.
+
+If Minikube does not support `LoadBalancer`, expose the service using a `NodePort` instead:
+
+[source,bash]
+----
+kubectl expose deployment my-custom-nginx-nginx --type=NodePort --name=my-nginx-service
+----
+
+Retrieve the Minikube IP and access the NGINX service:
+
+[source,bash]
+----
+minikube service my-nginx-service --url
+----
+
+Open the URL in your browser to confirm the deployment is successful.
+
+=== Step 7: Clean Up
+
+Uninstall the Helm release and delete the chart directory:
+
+[source,bash]
+----
+helm uninstall my-custom-nginx
+cd ..
+rm -rf nginx
+----
+
+== Explanation
+
+* *Artifact Hub:* Artifact Hub is a web-based application that allows you to find, install, and publish Kubernetes packages (Helm charts, operators, etc.).
+* *Customizing Helm Charts:* Customizing a Helm chart involves editing the `values.yaml` file, where you can override default settings to tailor the deployment to your needs.
+* *Deploying Custom Charts:* After customization, the chart is deployed using Helm, and Kubernetes resources are created based on your modified settings.
+
+== Verification
+
+Ensure the following to verify the lab:
+1. The Helm chart was successfully customized with your changes applied.
+2. The deployment has three NGINX pods running.
+3. The NGINX service is accessible via the provided Minikube IP.
+
+This lab demonstrates how to leverage Artifact Hub to find and customize Helm charts, making it easier to deploy applications tailored to specific requirements.
