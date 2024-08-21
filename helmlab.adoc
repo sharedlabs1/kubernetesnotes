@@ -1,0 +1,318 @@
+= Lab: Exploring the Advantages of Helm in Kubernetes
+
+== Objective
+
+In this lab, you will:
+* Deploy an application to Kubernetes manually without using Helm.
+* Identify the disadvantages of manual deployment.
+* Implement the same deployment using Helm.
+* Understand the advantages Helm provides for Kubernetes deployments.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+* Minikube installed and running.
+* `kubectl` installed and configured.
+* Basic understanding of Kubernetes objects.
+
+== Lab Steps
+
+=== Step 1: Install Helm
+
+Helm is a package manager for Kubernetes, and you'll need it installed before proceeding with the lab.
+
+.Install Helm
+[source,bash]
+----
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+----
+
+.Verify the Installation
+[source,bash]
+----
+helm version
+----
+
+You should see the Helm version details if the installation was successful.
+
+=== Step 2: Manual Deployment without Helm
+
+First, we will manually deploy a simple Nginx application to Kubernetes without using Helm.
+
+.Create the Deployment YAML
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21.1
+        ports:
+        - containerPort: 80
+----
+
+.Create the Service YAML
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
+----
+
+Apply the Deployment and Service manifests:
+
+[source,bash]
+----
+kubectl apply -f nginx-deployment.yaml
+kubectl apply -f nginx-service.yaml
+----
+
+Check the status of the deployment:
+
+[source,bash]
+----
+kubectl get deployments
+kubectl get pods
+kubectl get services
+----
+
+=== Step 3: Identify Disadvantages of Manual Deployment
+
+When deploying without Helm, the following disadvantages are observed:
+1. **Complexity:** Each Kubernetes object (Deployment, Service, ConfigMap, etc.) must be managed individually.
+2. **Repeatability:** Repeating the deployment across different environments (e.g., dev, staging, production) requires manual changes to YAML files.
+3. **Lack of Versioning:** Changes to the deployment are hard to track and version.
+4. **Maintenance:** Updating or rolling back requires modifying multiple YAML files manually.
+
+These challenges can lead to errors and make the process difficult to manage, especially as the number of Kubernetes objects increases.
+
+=== Step 4: Implement the Same Deployment Using Helm
+
+Now, we will use Helm to deploy the same Nginx application.
+
+.Create a Helm Chart
+[source,bash]
+----
+helm create nginx-chart
+----
+
+This command generates a basic Helm chart structure under the `nginx-chart` directory. The following files are of interest:
+* `values.yaml` - Contains the default configurations for the chart.
+* `templates/` - Contains the Kubernetes manifests that Helm will manage.
+
+.Edit `values.yaml` to configure the deployment
+[source,yaml]
+----
+# values.yaml
+
+replicaCount: 2
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "1.21.1"
+
+service:
+  type: NodePort
+  port: 80
+
+ingress:
+  enabled: false
+
+resources: {}
+
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+----
+
+.Deploy the Application Using Helm
+[source,bash]
+----
+helm install my-nginx nginx-chart
+----
+
+Verify the deployment:
+
+[source,bash]
+----
+helm list
+kubectl get deployments
+kubectl get services
+----
+
+=== Step 5: Add `kubectl` Manifests
+
+Kubernetes manifests can include ConfigMaps, Secrets, and other custom configurations. Here’s how to add a ConfigMap and Secret to the Nginx application.
+
+.Create a ConfigMap YAML
+[source,yaml]
+----
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: default
+data:
+  index.html: |
+    <html>
+    <head><title>Welcome to Nginx</title></head>
+    <body>
+    <h1>Success! The Nginx server is configured correctly.</h1>
+    </body>
+    </html>
+----
+
+.Create a Secret YAML
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nginx-secret
+type: Opaque
+data:
+  username: YWRtaW4=   # base64 encoded value for "admin"
+  password: cGFzc3dvcmQ= # base64 encoded value for "password"
+----
+
+.Apply the ConfigMap and Secret
+[source,bash]
+----
+kubectl apply -f nginx-config.yaml
+kubectl apply -f nginx-secret.yaml
+----
+
+You can now update the Nginx deployment to use the ConfigMap and Secret.
+
+.Update the Deployment YAML to use ConfigMap and Secret
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21.1
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-html
+          mountPath: /usr/share/nginx/html
+        env:
+        - name: NGINX_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret
+              key: username
+        - name: NGINX_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret
+              key: password
+      volumes:
+      - name: nginx-html
+        configMap:
+          name: nginx-config
+----
+
+Apply the updated deployment:
+
+[source,bash]
+----
+kubectl apply -f nginx-deployment.yaml
+----
+
+Verify that the ConfigMap and Secret are used correctly:
+
+[source,bash]
+----
+kubectl describe pod <nginx-pod-name>
+kubectl exec -it <nginx-pod-name> -- cat /usr/share/nginx/html/index.html
+kubectl exec -it <nginx-pod-name> -- env | grep NGINX
+----
+
+=== Step 6: Advantages of Using Helm
+
+By using Helm, the following advantages are observed:
+
+1. **Simplicity:** Helm packages all Kubernetes objects into a single chart, simplifying the deployment process.
+2. **Parameterization:** `values.yaml` allows easy configuration changes without editing multiple YAML files.
+3. **Repeatability:** Helm enables consistent deployments across environments with environment-specific values.
+4. **Versioning:** Helm tracks the history of releases, allowing easy rollback to previous versions.
+5. **Maintenance:** Updates are managed with simple Helm commands (`helm upgrade`, `helm rollback`).
+
+=== Step 7: Clean Up
+
+Remove the Helm release:
+
+[source,bash]
+----
+helm uninstall my-nginx
+----
+
+Remove the manually created resources (if still present):
+
+[source,bash]
+----
+kubectl delete -f nginx-deployment.yaml
+kubectl delete -f nginx-service.yaml
+kubectl delete -f nginx-config.yaml
+kubectl delete -f nginx-secret.yaml
+----
+
+== Explanation
+
+* *Manual Deployment:* Requires creating and managing individual YAML files for each Kubernetes object, leading to complexity and a higher risk of errors.
+* *Helm Deployment:* Helm bundles Kubernetes objects into a single, manageable chart. It simplifies deployment, improves repeatability, supports versioning, and makes maintenance easier.
+* *ConfigMap and Secret:* ConfigMaps and Secrets are standard ways to inject configuration data into your Kubernetes applications. Helm simplifies their management and integration into deployments.
+
+== Verification
+
+Ensure the following to verify the lab:
+1. The manual deployment works but requires multiple steps and files.
+2. The Helm deployment simplifies the process into a single command with easier updates and rollbacks.
+3. Proper cleanup is performed after the lab.
+
+This lab demonstrates the power and flexibility of Helm in managing Kubernetes deployments, highlighting how it reduces complexity and improves efficiency while handling configuration data effectively.
