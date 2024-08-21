@@ -1,0 +1,172 @@
+= Lab: Customizing an Existing Helm Chart for a Desired Outcome
+
+== Objective
+
+In this lab, you will:
+* Learn how to customize an existing Helm chart to achieve a specific outcome.
+* Understand how to modify `values.yaml` and Helm templates.
+* Verify the deployment to ensure the customizations are applied correctly.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+* Minikube installed and running.
+* `kubectl` and `Helm` installed and configured.
+* Basic understanding of Helm and Kubernetes.
+
+== Lab Steps
+
+=== Step 1: Install a Sample Helm Chart
+
+For this lab, we will use the official Nginx Helm chart provided by Bitnami as our base chart.
+
+.Add the Bitnami Repository
+[source,bash]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+----
+
+.Install the Nginx Helm Chart
+[source,bash]
+----
+helm install my-nginx bitnami/nginx
+----
+
+.Verify the Deployment
+[source,bash]
+----
+helm list
+kubectl get deployments
+kubectl get services
+----
+
+At this point, Nginx is deployed using the default settings provided by the Helm chart.
+
+=== Step 2: Identify Customization Requirements
+
+Suppose we want to:
+1. Change the Nginx replica count from 1 to 3.
+2. Expose the service on a different NodePort.
+3. Modify the default Nginx welcome page.
+
+These customizations require changes to the Helm chart's `values.yaml` file and possibly its templates.
+
+=== Step 3: Customize the Helm Chart
+
+To achieve the desired outcome, we will customize the Helm chart by overriding the default values.
+
+.Create a Custom `values.yaml`
+[source,yaml]
+----
+replicaCount: 3
+
+service:
+  type: NodePort
+  nodePorts:
+    http: 32080
+
+ingress:
+  enabled: false
+
+resources: {}
+
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+nginxServerBlock: |
+  server {
+      listen 80;
+      server_name localhost;
+      root /opt/bitnami/nginx/html;
+      index index.html;
+      location / {
+          return 200 'Welcome to the Customized Nginx Server!';
+          add_header Content-Type text/plain;
+      }
+  }
+----
+
+This custom `values.yaml` file:
+* Increases the replica count to 3.
+* Sets the NodePort for the Nginx service to 32080.
+* Customizes the Nginx welcome page.
+
+=== Step 4: Apply the Customizations
+
+Using the custom `values.yaml`, install or upgrade the Helm release.
+
+.Apply the Custom Values
+[source,bash]
+----
+helm upgrade --install my-nginx bitnami/nginx -f custom-values.yaml
+----
+
+Verify the deployment:
+
+[source,bash]
+----
+kubectl get deployments
+kubectl get pods
+kubectl get services
+----
+
+Confirm the replica count:
+
+[source,bash]
+----
+kubectl get deployment my-nginx -o=jsonpath='{.spec.replicas}'
+----
+
+Check the NodePort and access the custom welcome page:
+
+.Get the NodePort
+[source,bash]
+----
+kubectl get svc my-nginx -o=jsonpath='{.spec.ports[0].nodePort}'
+----
+
+.Access the Custom Nginx Page
+[source,bash]
+----
+curl http://$(minikube ip):32080
+----
+
+You should see the customized message: `Welcome to the Customized Nginx Server!`
+
+=== Step 5: Verify the Changes
+
+To ensure the customizations are correctly applied:
+* Verify the Nginx Deployment has 3 replicas.
+* Confirm the service is exposed on port 32080.
+* Ensure the Nginx server returns the customized welcome message.
+
+=== Step 6: Clean Up
+
+Remove the Helm release:
+
+[source,bash]
+----
+helm uninstall my-nginx
+----
+
+== Explanation
+
+* *Helm Chart Customization:* By modifying the `values.yaml` file, you can easily change configurations such as replica count, service type, and even application-specific settings like Nginx configuration.
+* *Overriding Default Values:* The `helm upgrade --install` command applies the custom values, allowing you to adapt a chart to different environments or requirements.
+* *Templates and Values:* Helm charts use Go templates for manifest generation. Customizing these templates via `values.yaml` enables flexible and reusable deployments.
+
+== Verification
+
+Ensure the following to verify the lab:
+1. The replica count is successfully updated to 3.
+2. The service is exposed on the specified NodePort.
+3. The customized Nginx welcome page is accessible.
+
+This lab demonstrates how to effectively customize an existing Helm chart to meet specific deployment requirements, illustrating the power and flexibility Helm provides in managing Kubernetes applications.
