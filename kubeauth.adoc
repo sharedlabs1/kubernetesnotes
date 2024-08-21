@@ -1,0 +1,187 @@
+= Lab: Authentication and Authorization using Minikube
+
+== Objective
+
+In this lab, you will:
+* Learn how to configure and implement authentication and authorization in a Kubernetes cluster using Minikube.
+* Understand how to create users, roles, and role bindings.
+* Verify the implementation by testing access controls.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+* Minikube installed and running.
+* `kubectl` installed and configured.
+* Basic understanding of Kubernetes concepts.
+
+== Lab Steps
+
+=== Step 1: Start Minikube
+
+Start your Minikube cluster if it is not already running.
+
+[source,bash]
+----
+minikube start
+----
+
+Verify that the Minikube cluster is running:
+
+[source,bash]
+----
+kubectl cluster-info
+----
+
+=== Step 2: Create a New Namespace
+
+We will create a new namespace called `auth-demo` where we will configure authentication and authorization.
+
+[source,bash]
+----
+kubectl create namespace auth-demo
+----
+
+Verify the namespace creation:
+
+[source,bash]
+----
+kubectl get namespaces
+----
+
+=== Step 3: Create a Service Account
+
+Service accounts are used by processes running inside pods to interact with the Kubernetes API. We'll create a service account that will simulate a user account.
+
+[source,bash]
+----
+kubectl create serviceaccount demo-user -n auth-demo
+----
+
+List the service accounts to verify creation:
+
+[source,bash]
+----
+kubectl get serviceaccounts -n auth-demo
+----
+
+=== Step 4: Generate a Token for the Service Account
+
+Generate a token that will be used for authentication.
+
+[source,bash]
+----
+kubectl create token demo-user -n auth-demo
+----
+
+The output will display the token, which will be used later for authentication.
+
+=== Step 5: Create a Role and RoleBinding
+
+Create a role that defines the permissions and a role binding that assigns this role to the service account.
+
+.Create a Role to Allow Listing Pods
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: auth-demo
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+----
+
+Apply the role:
+
+[source,bash]
+----
+kubectl apply -f pod-reader-role.yaml
+----
+
+.Create a RoleBinding to Bind the Role to the Service Account
+[source,yaml]
+----
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods-binding
+  namespace: auth-demo
+subjects:
+- kind: ServiceAccount
+  name: demo-user
+  namespace: auth-demo
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+----
+
+Apply the role binding:
+
+[source,bash]
+----
+kubectl apply -f rolebinding.yaml
+----
+
+=== Step 6: Test Authentication and Authorization
+
+Create a kubeconfig file for the `demo-user` to simulate the user accessing the cluster with the assigned permissions.
+
+.Create a `demo-user` Kubeconfig File
+[source,bash]
+----
+kubectl config set-credentials demo-user --token=<TOKEN>
+kubectl config set-context demo-user-context --cluster=minikube --namespace=auth-demo --user=demo-user
+kubectl config use-context demo-user-context
+----
+
+Replace `<TOKEN>` with the token generated earlier.
+
+.Test Access to Pods (Allowed)
+[source,bash]
+----
+kubectl get pods
+----
+
+.Test Access to Services (Denied)
+[source,bash]
+----
+kubectl get services
+----
+
+The first command should succeed, while the second should fail, demonstrating that the `demo-user` only has access to list pods as per the role defined.
+
+=== Step 7: Clean Up
+
+Reset the kubeconfig context back to the default context:
+
+[source,bash]
+----
+kubectl config use-context minikube
+----
+
+Remove the resources created:
+
+[source,bash]
+----
+kubectl delete namespace auth-demo
+kubectl delete role pod-reader -n auth-demo
+kubectl delete rolebinding read-pods-binding -n auth-demo
+----
+
+== Explanation
+
+* *Service Account:* In Kubernetes, a service account provides an identity for processes running in a pod to interact with the API server.
+* *Role and RoleBinding:* Roles define a set of permissions, and role bindings assign these roles to users or service accounts. This lab uses a role to allow the `demo-user` to list pods and demonstrates how role bindings enforce these permissions.
+* *Authentication vs. Authorization:* Authentication verifies the identity of a user or service account, while authorization determines what actions they are permitted to take.
+
+== Verification
+
+Ensure the following to verify the lab:
+1. The `demo-user` can list pods in the `auth-demo` namespace but cannot list services.
+2. The authentication using the generated token is successful.
+3. Role and RoleBinding are correctly applied to enforce access control.
+
+This lab demonstrates how to set up and verify basic authentication and authorization using service accounts, roles, and role bindings in a Kubernetes cluster managed by Minikube.
