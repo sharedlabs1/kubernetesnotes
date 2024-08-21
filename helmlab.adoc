@@ -102,9 +102,13 @@ kubectl get services
 === Step 3: Identify Disadvantages of Manual Deployment
 
 When deploying without Helm, the following disadvantages are observed:
+
 1. **Complexity:** Each Kubernetes object (Deployment, Service, ConfigMap, etc.) must be managed individually.
+
 2. **Repeatability:** Repeating the deployment across different environments (e.g., dev, staging, production) requires manual changes to YAML files.
+
 3. **Lack of Versioning:** Changes to the deployment are hard to track and version.
+
 4. **Maintenance:** Updating or rolling back requires modifying multiple YAML files manually.
 
 These challenges can lead to errors and make the process difficult to manage, especially as the number of Kubernetes objects increases.
@@ -120,7 +124,9 @@ helm create nginx-chart
 ----
 
 This command generates a basic Helm chart structure under the `nginx-chart` directory. The following files are of interest:
+
 * `values.yaml` - Contains the default configurations for the chart.
+
 * `templates/` - Contains the Kubernetes manifests that Helm will manage.
 
 .Edit `values.yaml` to configure the deployment
@@ -305,7 +311,9 @@ kubectl delete -f nginx-secret.yaml
 == Explanation
 
 * *Manual Deployment:* Requires creating and managing individual YAML files for each Kubernetes object, leading to complexity and a higher risk of errors.
+
 * *Helm Deployment:* Helm bundles Kubernetes objects into a single, manageable chart. It simplifies deployment, improves repeatability, supports versioning, and makes maintenance easier.
+
 * *ConfigMap and Secret:* ConfigMaps and Secrets are standard ways to inject configuration data into your Kubernetes applications. Helm simplifies their management and integration into deployments.
 
 == Verification
