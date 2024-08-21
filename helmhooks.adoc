@@ -1,0 +1,198 @@
+= Lab: Understanding and Using Helm Hooks
+
+== Objective
+
+In this lab, you will:
+* Learn about Helm hooks and how they can be used to extend chart functionality.
+* Create a Helm chart with hooks.
+* Verify the execution of hooks during the Helm lifecycle.
+
+== Prerequisites
+
+Before starting this lab, ensure you have the following:
+* Minikube installed and running.
+* `kubectl` and `Helm` installed and configured.
+* Basic understanding of Helm and Kubernetes concepts.
+
+== Lab Steps
+
+=== Step 1: Start Minikube
+
+Ensure that Minikube is running:
+
+[source,bash]
+----
+minikube start
+----
+
+Verify that the Minikube cluster is active:
+
+[source,bash]
+----
+kubectl cluster-info
+----
+
+=== Step 2: Create a New Helm Chart
+
+Create a new Helm chart named `hook-demo`:
+
+[source,bash]
+----
+helm create hook-demo
+----
+
+Change into the `hook-demo` directory:
+
+[source,bash]
+----
+cd hook-demo
+----
+
+The `templates/` directory contains files that define Kubernetes resources. We will add hooks here.
+
+=== Step 3: Create a Pre-Install Hook
+
+Helm hooks allow you to run scripts or commands at different points in the Helm release lifecycle. We'll create a Pre-Install hook that runs before any Kubernetes resources are installed.
+
+.Create a Pre-Install Hook
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pre-install-job
+  labels:
+    app: hook-demo
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    spec:
+      containers:
+      - name: pre-install
+        image: busybox
+        command: ['sh', '-c', 'echo Pre-Install Hook: Preparing environment']
+      restartPolicy: Never
+  backoffLimit: 1
+----
+
+Save this as `templates/pre-install-job.yaml`.
+
+This job will run a simple command as a Helm Pre-Install hook. The annotation `"helm.sh/hook": pre-install` defines this behavior.
+
+=== Step 4: Create a Post-Install Hook
+
+Next, create a Post-Install hook that runs after all Kubernetes resources have been created.
+
+.Create a Post-Install Hook
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: post-install-job
+  labels:
+    app: hook-demo
+  annotations:
+    "helm.sh/hook": post-install
+spec:
+  template:
+    spec:
+      containers:
+      - name: post-install
+        image: busybox
+        command: ['sh', '-c', 'echo Post-Install Hook: Setup complete']
+      restartPolicy: Never
+  backoffLimit: 1
+----
+
+Save this as `templates/post-install-job.yaml`.
+
+This job will execute a command after the Helm chart's resources are installed.
+
+=== Step 5: Install the Helm Chart
+
+Now, install the Helm chart and observe the hooks in action.
+
+.Install the `hook-demo` Chart
+[source,bash]
+----
+helm install my-hook-demo .
+----
+
+During installation, you should see the hooks running.
+
+.Verify the Hook Jobs
+[source,bash]
+----
+kubectl get jobs
+kubectl logs job/pre-install-job
+kubectl logs job/post-install-job
+----
+
+The output should confirm that both the Pre-Install and Post-Install hooks ran successfully.
+
+=== Step 6: Verify the Output
+
+To ensure that the hooks worked as expected, verify the logs from both jobs:
+
+.View Pre-Install Hook Logs
+[source,bash]
+----
+kubectl logs job/pre-install-job
+----
+
+The output should be:
+----
+Pre-Install Hook: Preparing environment
+----
+
+.View Post-Install Hook Logs
+[source,bash]
+----
+kubectl logs job/post-install-job
+----
+
+The output should be:
+----
+Post-Install Hook: Setup complete
+----
+
+These logs confirm that the hooks executed correctly during the Helm chart installation.
+
+=== Step 7: Uninstall the Helm Chart
+
+Uninstall the Helm chart and verify that no resources are left behind:
+
+[source,bash]
+----
+helm uninstall my-hook-demo
+kubectl get jobs
+----
+
+All jobs should be deleted as part of the Helm uninstall process.
+
+=== Step 8: Clean Up
+
+Remove any remaining resources and return to the original directory:
+
+[source,bash]
+----
+kubectl delete jobs --all
+cd ..
+rm -rf hook-demo
+----
+
+== Explanation
+
+* *Helm Hooks:* Helm hooks enable chart developers to execute commands at specific points in a release's lifecycle, such as before or after installation, upgrade, or deletion. This adds flexibility to manage complex deployments.
+* *Pre-Install Hook:* This hook runs before any resources are created, allowing you to prepare the environment.
+* *Post-Install Hook:* This hook runs after all resources are created, ideal for completing final setup steps or notifications.
+
+== Verification
+
+Ensure the following to verify the lab:
+1. Both Pre-Install and Post-Install hooks ran successfully, as confirmed by their logs.
+2. The Helm chart was installed, the hooks executed, and the chart was uninstalled without leaving any orphaned resources.
+
+This lab demonstrates how to leverage Helm hooks to manage and automate tasks in a Kubernetes deployment, showcasing their powerful integration into the Helm lifecycle.
