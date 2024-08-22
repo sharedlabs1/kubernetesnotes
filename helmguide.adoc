@@ -1,0 +1,383 @@
+= Helm Mastery: A Comprehensive Guide
+Author:Niranjan Pandey
+:toc:
+
+== Introduction
+
+This book is a comprehensive guide to mastering Helm, the package manager for Kubernetes. It covers a wide range of topics from basic Helm deployments to advanced concepts like hooks, subcharts, ArtifactHub customization, monitoring, and Operators. Each lab is designed to provide hands-on experience with practical examples and detailed steps.
+
+== Lab 1: Helm Basics - Creating a Deployment with and without Helm
+
+### Objectives
+
+* Understand the difference between manual Kubernetes deployments and Helm deployments.
+* Explore the advantages of using Helm by comparing a manual deployment to one managed by Helm.
+
+### Prerequisites
+
+* A running Kubernetes cluster (Minikube, k3s, or cloud-based).
+* Helm installed on your local machine.
+
+### Step 1: Create a Kubernetes Deployment Manually
+
+Create a `deployment.yaml` file:
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.17.1
+        ports:
+        - containerPort: 80
+----
+
+Apply the deployment:
+
+[source,bash]
+----
+kubectl apply -f deployment.yaml
+----
+
+### Step 2: Verify the Deployment
+
+Check the pods:
+
+[source,bash]
+----
+kubectl get pods
+----
+
+You should see three pods running.
+
+### Step 3: Identify the Disadvantages of Manual Deployment
+
+* Lack of version control for Kubernetes resources.
+* Difficulty in managing multiple environments (e.g., dev, test, prod).
+* No templating for reusability.
+
+### Step 4: Create the Same Deployment Using Helm
+
+Create a Helm chart:
+
+[source,bash]
+----
+helm create mychart
+----
+
+Modify the `values.yaml`:
+
+[source,yaml]
+----
+replicaCount: 3
+image:
+  repository: nginx
+  tag: "1.17.1"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+----
+
+Install the chart:
+
+[source,bash]
+----
+helm install nginx-chart ./mychart
+----
+
+### Step 5: Verify the Helm Deployment
+
+Check the pods:
+
+[source,bash]
+----
+kubectl get pods
+----
+
+### Conclusion
+
+Using Helm simplifies deployment, enables version control, and offers templating for reusability.
+
+== Lab 2: Helm Hooks
+
+### Objectives
+
+* Understand Helm hooks and their use cases.
+* Implement Helm hooks in a real-world scenario.
+
+### Step 1: Create a Hook in a Helm Chart
+
+Modify the `templates/hooks.yaml` file in your Helm chart:
+
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}-hook"
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    spec:
+      containers:
+      - name: hook-container
+        image: busybox
+        command: ['sh', '-c', 'echo Hello, Helm Hooks! && sleep 5']
+      restartPolicy: Never
+----
+
+### Step 2: Install the Helm Chart
+
+[source,bash]
+----
+helm install hook-chart ./mychart
+----
+
+### Step 3: Verify the Hook Execution
+
+Check the jobs:
+
+[source,bash]
+----
+kubectl get jobs
+----
+
+You should see a job corresponding to the hook.
+
+### Conclusion
+
+Helm hooks allow you to perform custom actions at different points in a release lifecycle.
+
+== Lab 3: Subcharts and Dependencies Management in Helm
+
+### Objectives
+
+* Learn how to manage dependencies using Helm subcharts.
+* Implement subcharts in a Helm chart.
+
+### Step 1: Create a Parent Chart
+
+[source,bash]
+----
+helm create parentchart
+----
+
+### Step 2: Add a Subchart
+
+Create a subchart in `charts/`:
+
+[source,bash]
+----
+helm create subchart
+mv subchart parentchart/charts/
+----
+
+### Step 3: Define Dependencies in `requirements.yaml`
+
+Edit the `requirements.yaml`:
+
+[source,yaml]
+----
+dependencies:
+  - name: subchart
+    version: 0.1.0
+    repository: "file://charts/subchart"
+----
+
+### Step 4: Install the Parent Chart
+
+[source,bash]
+----
+helm dependency update
+helm install parent-chart ./parentchart
+----
+
+### Conclusion
+
+Subcharts and dependencies help manage complex applications by breaking them into manageable components.
+
+== Lab 4: ArtifactHub - Customizing an Existing Template
+
+### Objectives
+
+* Learn how to find and customize a Helm chart from ArtifactHub.
+
+### Step 1: Find a Chart on ArtifactHub
+
+Visit ArtifactHub and find a chart.
+
+### Step 2: Download the Chart
+
+[source,bash]
+----
+helm pull stable/nginx
+tar -xvf nginx-*.tgz
+cd nginx
+----
+
+### Step 3: Customize the Chart
+
+Edit the `values.yaml`:
+
+[source,yaml]
+----
+replicaCount: 5
+image:
+  repository: custom-nginx
+----
+
+### Step 4: Install the Customized Chart
+
+[source,bash]
+----
+helm install custom-nginx .
+----
+
+### Conclusion
+
+ArtifactHub offers a rich repository of Helm charts, which you can customize to suit your needs.
+
+== Lab 5: Kubernetes Monitoring with Prometheus and Grafana Using Helm
+
+### Objectives
+
+* Deploy Prometheus and Grafana using Helm.
+* Set up monitoring for a Kubernetes cluster.
+
+### Step 1: Add the Helm Repository
+
+[source,bash]
+----
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+----
+
+### Step 2: Install Prometheus
+
+[source,bash]
+----
+helm install prometheus prometheus-community/kube-prometheus-stack
+----
+
+### Step 3: Install Grafana
+
+[source,bash]
+----
+helm install grafana prometheus-community/grafana
+----
+
+### Step 4: Access Grafana Dashboard
+
+Forward the port:
+
+[source,bash]
+----
+kubectl port-forward svc/grafana 3000:80
+----
+
+### Conclusion
+
+Monitoring a Kubernetes cluster with Prometheus and Grafana provides valuable insights into your applications.
+
+== Lab 6: Deploying and Using a Kubernetes Operator with Helm
+
+### Objectives
+
+* Understand what a Kubernetes Operator is and why it's useful.
+* Learn how to deploy a Kubernetes Operator using Helm.
+
+### Step 1: Add the Operator Lifecycle Manager (OLM) Helm Repository
+
+[source,bash]
+----
+helm repo add operator-framework https://operator-framework.github.io/community-operators
+helm repo update
+----
+
+### Step 2: Install the Operator Lifecycle Manager (OLM)
+
+[source,bash]
+----
+helm install olm operator-framework/olm --namespace operators --create-namespace
+----
+
+### Step 3: Deploy a Sample Operator
+
+[source,bash]
+----
+helm install etcd-operator operator-framework/community-operators --namespace operators
+----
+
+### Step 4: Create a Custom Resource for the Operator
+
+[source,yaml]
+----
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  name: example-etcd-cluster
+  namespace: operators
+spec:
+  size: 3
+  version: "3.2.13"
+----
+
+Apply the resource:
+
+[source,bash]
+----
+kubectl apply -f etcd-cluster.yaml
+----
+
+### Step 5: Verify the Deployment
+
+[source,bash]
+----
+kubectl get pods -n operators
+----
+
+### Step 6: Test the Operator's Capabilities
+
+Scale the etcd cluster:
+
+[source,yaml]
+----
+spec:
+  size: 5
+----
+
+Apply the changes:
+
+[source,bash]
+----
+kubectl apply -f etcd-cluster.yaml
+----
+
+### Step 7: Clean Up
+
+[source,bash]
+----
+kubectl delete -f etcd-cluster.yaml
+helm uninstall etcd-operator --namespace operators
+helm uninstall olm --namespace operators
+----
+
+### Conclusion
+
+Kubernetes Operators simplify the management of complex applications by automating operational tasks.
+
