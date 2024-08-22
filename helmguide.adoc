@@ -4,7 +4,7 @@ Author:Niranjan Pandey
 
 == Introduction
 
-This book is a comprehensive guide to mastering Helm, the package manager for Kubernetes. It covers a wide range of topics from basic Helm deployments to advanced concepts like hooks, subcharts, ArtifactHub customization, monitoring, and Operators. Each lab is designed to provide hands-on experience with practical examples and detailed steps.
+This LabGuide is a comprehensive guide to mastering Helm, the package manager for Kubernetes. It covers a wide range of topics from basic Helm deployments to advanced concepts like hooks, subcharts, ArtifactHub customization, monitoring, and Operators. Each lab is designed to provide hands-on experience with practical examples and detailed steps.
 
 == Lab 1: Helm Basics - Creating a Deployment with and without Helm
 
