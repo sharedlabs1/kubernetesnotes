@@ -381,3 +381,288 @@ helm uninstall olm --namespace operators
 
 Kubernetes Operators simplify the management of complex applications by automating operational tasks.
 
+== Lab 7: Helm Template Rendering and Debugging
+
+### Objectives
+
+* Understand how Helm templates are rendered.
+* Learn how to debug Helm templates using the `helm template` and `helm lint` commands.
+
+### Step 1: Render Helm Templates
+
+Render the templates locally without deploying:
+
+[source,bash]
+----
+helm template mychart ./mychart
+----
+
+### Step 2: Debug Templates with `helm lint`
+
+Use the `helm lint` command to catch template errors:
+
+[source,bash]
+----
+helm lint ./mychart
+----
+
+### Step 3: Fix Identified Errors
+
+If there are any errors, fix them in the template files and re-run the `helm lint` command until it passes.
+
+### Conclusion
+
+Rendering and debugging Helm templates locally ensures that your Helm chart is error-free before deploying to your cluster.
+
+== Lab 8: Managing Helm Releases
+
+### Objectives
+
+* Learn how to manage Helm releases, including upgrades, rollbacks, and uninstalls.
+
+### Step 1: Install an Initial Release
+
+[source,bash]
+----
+helm install my-release ./mychart
+----
+
+### Step 2: Upgrade the Release
+
+Modify `values.yaml` and upgrade the release:
+
+[source,bash]
+----
+helm upgrade my-release ./mychart
+----
+
+### Step 3: Rollback the Release
+
+If the upgrade fails or has issues, roll back to a previous version:
+
+[source,bash]
+----
+helm rollback my-release 1
+----
+
+### Step 4: Uninstall the Release
+
+Uninstall the Helm release:
+
+[source,bash]
+----
+helm uninstall my-release
+----
+
+### Conclusion
+
+Helm's powerful release management capabilities make it easy to manage your application's lifecycle.
+
+== Lab 9: Helm Chart Testing
+
+### Objectives
+
+* Understand how to write and run tests in a Helm chart.
+
+### Step 1: Create a Test File
+
+Add a test file to the `templates/` directory:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test"
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+  - name: curl
+    image: appropriate/curl
+    command: ['curl']
+    args: ['{{ .Release.Name }}-service']
+----
+
+### Step 2: Run the Test
+
+Run the Helm test:
+
+[source,bash]
+----
+helm test my-release
+----
+
+### Step 3: Verify the Test Results
+
+Check the test results:
+
+[source,bash]
+----
+kubectl get pods | grep test
+----
+
+### Conclusion
+
+Helm chart testing ensures that your deployments are functioning as expected.
+
+== Lab 10: Automating Helm Releases with CI/CD
+
+### Objectives
+
+* Learn how to integrate Helm with CI/CD pipelines for automated releases.
+
+### Step 1: Set Up a CI/CD Pipeline
+
+Use GitHub Actions, GitLab CI, or Jenkins to create a CI/CD pipeline.
+
+### Step 2: Write a CI/CD Script for Helm
+
+Create a pipeline script that installs, upgrades, and tests Helm charts:
+
+[source,yaml]
+----
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Set up Helm
+      run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    - name: Install Helm chart
+      run: helm upgrade --install my-release ./mychart
+    - name: Test Helm chart
+      run: helm test my-release
+----
+
+### Step 3: Run the Pipeline
+
+Commit and push your changes to trigger the pipeline.
+
+### Conclusion
+
+Integrating Helm with CI/CD pipelines automates your deployment process, ensuring consistency and reliability.
+
+== Lab 11: Using Helm with Helmfile for Multi-Environment Management
+
+### Objectives
+
+* Learn how to use Helmfile to manage Helm charts across multiple environments.
+
+### Step 1: Install Helmfile
+
+Install Helmfile on your local machine:
+
+[source,bash]
+----
+brew install helmfile
+----
+
+### Step 2: Create a Helmfile Configuration
+
+Create a `helmfile.yaml` file:
+
+[source,yaml]
+----
+repositories:
+  - name: stable
+    url: https://charts.helm.sh/stable
+
+releases:
+  - name: my-release
+    namespace: default
+    chart: stable/nginx
+    values:
+      - values.yaml
+    environments:
+      dev:
+        values:
+          - values-dev.yaml
+      prod:
+        values:
+          - values-prod.yaml
+----
+
+### Step 3: Deploy to Different Environments
+
+Deploy to the development environment:
+
+[source,bash]
+----
+helmfile -e dev apply
+----
+
+Deploy to the production environment:
+
+[source,bash]
+----
+helmfile -e prod apply
+----
+
+### Conclusion
+
+Helmfile simplifies the management of Helm charts across multiple environments, making your deployment process more efficient.
+
+== Lab 12: Advanced Helm Templating Techniques
+
+### Objectives
+
+* Explore advanced templating techniques in Helm, such as conditional logic, loops, and named templates.
+
+### Step 1: Add Conditional Logic to a Template
+
+Edit a template file to include conditional logic:
+
+[source,yaml]
+----
+{{- if .Values.enableFeatureX }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feature-x-config
+data:
+  config: "enabled"
+{{- end }}
+----
+
+### Step 2: Add a Loop to a Template
+
+Include a loop to create multiple resources:
+
+[source,yaml]
+----
+{{- range .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  ports:
+  - port: {{ .port }}
+{{- end }}
+----
+
+### Step 3: Create a Named Template
+
+Define and use a named template:
+
+[source,yaml]
+----
+{{- define "mychart.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+spec:
+  ports:
+  - port: {{ .port }}
+{{- end -}}
+
+{{ include "mychart.service" . }}
+----
+
+### Conclusion
+
+Advanced templating techniques allow for greater flexibility and reusability in your Helm charts.
+
