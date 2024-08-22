@@ -666,3 +666,128 @@ spec:
 
 Advanced templating techniques allow for greater flexibility and reusability in your Helm charts.
 
+== Exercise Workbook: Helm Mastery Challenges
+
+This workbook provides a set of 10 challenges to reinforce your knowledge and skills in Helm. Each challenge is designed to test different aspects of what you’ve learned throughout the labs. Follow the instructions carefully, implement the solutions, and verify the outcomes to complete each challenge.
+
+=== Challenge 1: Creating a New Helm Chart
+
+*Objective*: Create a new Helm chart from scratch that deploys a simple Nginx web server.
+
+Steps:
+1. Use the `helm create` command to generate a new chart.
+2. Modify the `values.yaml` file to customize the deployment.
+3. Add a service to expose the Nginx server on a specific port.
+4. Deploy the chart using `helm install`.
+5. Verify that the Nginx server is running and accessible.
+
+*Verification*: Confirm that the Nginx server is running by accessing it via a web browser or `curl`.
+
+=== Challenge 2: Customize a Chart with User Input
+
+*Objective*: Customize an existing Helm chart by adding user-provided values during installation.
+
+Steps:
+1. Choose an existing Helm chart from a public repository or one you created earlier.
+2. Modify the chart to accept additional values (e.g., replica count, image tag) through `--set` or a custom `values.yaml`.
+3. Install the chart with custom values provided via command line or file.
+4. Validate that the deployment reflects the custom values.
+
+*Verification*: Use `kubectl` commands to check the deployment and confirm the applied custom values.
+
+=== Challenge 3: Implement Helm Hooks for Pre-Deployment Tasks
+
+*Objective*: Create a Helm hook that performs a database migration before deploying an application.
+
+Steps:
+1. Add a new Kubernetes Job resource in the Helm chart that runs a database migration script.
+2. Annotate the Job with `helm.sh/hook: pre-install` to ensure it runs before deployment.
+3. Deploy the chart and verify the hook execution.
+4. Roll back the deployment and ensure the hook is not executed again.
+
+*Verification*: Check the logs of the Job to confirm the migration script ran successfully.
+
+=== Challenge 4: Manage Dependencies with Subcharts
+
+*Objective*: Integrate a MySQL subchart into your application chart as a dependency.
+
+Steps:
+1. Add the MySQL chart as a dependency in your main chart’s `Chart.yaml`.
+2. Customize the MySQL configuration using `values.yaml` in the parent chart.
+3. Install the chart with the dependencies and validate that both the application and MySQL are deployed.
+4. Scale the MySQL deployment independently of the main application.
+
+*Verification*: Confirm that the MySQL service is running and accessible from the main application.
+
+=== Challenge 5: Debugging Helm Templates
+
+*Objective*: Identify and fix template errors in a broken Helm chart.
+
+Steps:
+1. Create or obtain a Helm chart with intentional template errors (syntax or logic).
+2. Use `helm lint` and `helm template` to identify the errors.
+3. Correct the errors in the template files.
+4. Deploy the chart to verify it works correctly.
+
+*Verification*: Ensure the chart deploys without errors and the application runs as expected.
+
+=== Challenge 6: Automate Release Management with CI/CD
+
+*Objective*: Set up a CI/CD pipeline to automatically deploy and test a Helm chart on every commit.
+
+Steps:
+1. Choose a CI/CD platform like GitHub Actions, GitLab CI, or Jenkins.
+2. Write a pipeline script that performs Helm chart installation, upgrades, and testing.
+3. Integrate the pipeline with your Git repository to trigger on push or pull request.
+4. Verify the pipeline runs and deploys the chart on every change.
+
+*Verification*: Ensure the pipeline deploys the application correctly and runs tests successfully.
+
+=== Challenge 7: Using Helmfile for Multi-Environment Management
+
+*Objective*: Manage Helm deployments across multiple environments using Helmfile.
+
+Steps:
+1. Set up a Helmfile configuration that defines releases for dev, staging, and production environments.
+2. Customize the `values.yaml` for each environment.
+3. Use Helmfile commands to deploy to each environment and test the outcome.
+4. Implement an automated pipeline to deploy based on the target environment.
+
+*Verification*: Confirm that the appropriate configuration is applied based on the environment.
+
+=== Challenge 8: Advanced Templating Techniques
+
+*Objective*: Implement advanced templating features like loops, conditionals, and named templates in a Helm chart.
+
+Steps:
+1. Modify an existing Helm chart to include loops for dynamically creating resources.
+2. Use conditionals to create optional resources based on values provided during deployment.
+3. Define a named template and use it across multiple files in the chart.
+4. Deploy the chart and verify the correct resources are created.
+
+*Verification*: Use `kubectl` and Helm commands to check that the resources match the expected outcome.
+
+=== Challenge 9: Integrate Monitoring with Prometheus and Grafana
+
+*Objective*: Deploy Prometheus and Grafana using Helm and integrate them with an existing application for monitoring.
+
+Steps:
+1. Deploy Prometheus and Grafana using Helm charts.
+2. Configure Prometheus to scrape metrics from your application.
+3. Set up Grafana dashboards to visualize the metrics.
+4. Deploy the entire monitoring stack as part of a single Helm release.
+
+*Verification*: Access Grafana and verify that metrics from the application are being collected and displayed.
+
+=== Challenge 10: Build a Custom Kubernetes Operator with Helm
+
+*Objective*: Create a Kubernetes Operator using Helm and the Operator SDK.
+
+Steps:
+1. Install the Operator SDK and create a new Helm-based operator project.
+2. Define custom resources and the Helm chart logic within the operator.
+3. Deploy the operator and create instances of the custom resources.
+4. Test the operator’s behavior by scaling, updating, or deleting the custom resources.
+
+*Verification*: Confirm that the operator correctly manages the lifecycle of the custom resources.
+
